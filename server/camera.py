@@ -6,8 +6,9 @@ import random
 
 
 
-
 class Camera:  
+    
+    frame_processer: fp.FrameProcessor
     
     def __init__(self, name: str, stream_url: str) -> None:
         self.name = name
@@ -18,10 +19,9 @@ class Camera:
         self.online = False
         self.capture: cv2.VideoCapture = None
         
-        self.frame_processer = fp.FrameProcessor(self.capture)
+    
 
-        self.enable_motion_detection()
-        
+
         print('Started camera: {}'.format(self.stream_url))
         self.load_network_stream()
 
@@ -33,7 +33,9 @@ class Camera:
             if self.verify_network_stream(self.stream_url):
                 self.capture = cv2.VideoCapture(self.stream_url)
                 self.online = True
-
+                self.frame_processer = fp.FrameProcessor(self.stream_url)
+                self.enable_motion_detection()
+                
         self.load_stream_thread = Thread(target=load_network_stream_thread, args=())
         self.load_stream_thread.daemon = True
         self.load_stream_thread.start()
@@ -63,10 +65,10 @@ class Camera:
         while True:
             if self.capture is None:
                 continue
-            num = random.random()
-            print(num)
+     
             _, img = self.capture.read()
             
+
             
             imgencode = cv2.imencode('.jpg', img)[1]
             stringData = imgencode.tostring()

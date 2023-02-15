@@ -1,23 +1,24 @@
 import cv2
 import numpy as np
 import threading
-import time
+import utils
 
 class MotionDetector():
     
     
     enabled = False
     motion_detected = False
+    motion_timer: utils.ResettableTimer
     
-    def __init__(self, cap: cv2.VideoCapture) -> None:
-        self.cap = cap
+    def __init__(self, stream_url: str) -> None:
+        self.cap = cv2.VideoCapture(stream_url)
+        self.motion_timer = utils.ResettableTimer(5.0, self.undetect_motion)
 
 
     def start(self):
         self.enabled = True
 
-        t = threading.Thread(target=self.detect_motion)
-        t.daemon = True
+        t = threading.Thread(target=self.detect_motion, daemon=True)
         self.thread = t
         
         t.start()
@@ -25,12 +26,15 @@ class MotionDetector():
     def stop(self):
         self.enabled = False
 
+    def undetect_motion(self):
+        print("No motion detected for the last 5 sec")
+        self.motion_detected = False
+
     def detect_motion(self):
         frame_count = 0
 
         previous_frame = None
 
-        print("detect")
 
         # Loop through frames from the stream
         while self.enabled:
@@ -48,7 +52,7 @@ class MotionDetector():
 
             # Update the frame count
             frame_count += 1
-            print(213423523)
+
             # Calculate the current FPS every 10 frames
             if frame_count % 5 == 0:
                 img_rgb = cv2.cvtColor(src=frame, code=cv2.COLOR_BGR2RGB)
@@ -78,7 +82,8 @@ class MotionDetector():
 
                 # Check if the mean pixel value is above the motion threshold
                 if mean_val > motion_threshold:
+                    print("Motion detected")
                     self.motion_detected = True
-                    print("Motion detected!")
-        
+
+                    self.motion_timer.restart ()
 
